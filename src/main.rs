@@ -66,6 +66,14 @@ impl Shader {
     }
 }
 
+impl Drop for Shader {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteShader(self.id);
+        }
+    }
+}
+
 fn shader_from_source(
     source: &CStr,
     kind: gl::types::GLuint,
