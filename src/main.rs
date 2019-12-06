@@ -44,6 +44,20 @@ fn main() {
     }
 }
 
+struct Shader {
+    id: gl::types::GLuint,
+}
+
+impl Shader {
+    fn from_source(
+        source: &CStr,
+        kind: gl::types::GLenum,
+    ) -> Result<Shader, String> {
+        let id = shader_from_source(source, kind)?;
+        Ok(Shader { id })
+    }
+}
+
 fn shader_from_source(
     source: &CStr,
     kind: gl::types::GLuint,
