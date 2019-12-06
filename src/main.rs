@@ -2,7 +2,7 @@ extern crate gl;
 extern crate sdl2;
 
 // import namespace to avoid repeating `std::ffi` everywhere
-use std::ffi::{CString, CStr};
+use std::ffi::{CStr, CString};
 
 fn main() {
     let sdl = sdl2::init().unwrap();
@@ -55,6 +55,14 @@ impl Shader {
     ) -> Result<Shader, String> {
         let id = shader_from_source(source, kind)?;
         Ok(Shader { id })
+    }
+
+    fn from_vert_source(source: &Cstr) -> Result<Shader, String> {
+        Shader::from_source(source, gl::VERTEX_SHADER)
+    }
+
+    fn from_frag_source(source: &Cstr) -> Result<Shader, String> {
+        Shader::from_source(source, gl::FRAGMENT_SHADER)
     }
 }
 
