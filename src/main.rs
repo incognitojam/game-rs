@@ -5,6 +5,7 @@ extern crate sdl2;
 
 use std::path::Path;
 
+use crate::render_gl::data;
 use crate::resources::Resources;
 
 pub mod render_gl;
@@ -43,11 +44,11 @@ fn run() -> Result<(), failure::Error> {
         "shaders/triangle",
     )?;
 
-    let vertices: Vec<f32> = vec![
-        // positions     colors
-        -0.5, -0.5, 0.0, 1.0, 0.0, 0.0, // bottom right
-        0.5, -0.5, 0.0, 0.0, 1.0, 0.0, // bottom left
-        0.0, 0.5, 0.0, 0.0, 0.0, 1.0, // top
+    let vertices: Vec<data::f32x3> = vec![
+        // positions
+        (0.5, -0.5, 0.0).into(), (1.0, 0.0, 0.0).into(), // bottom right
+        (-0.5, -0.5, 0.0).into(), (0.0, 1.0, 0.0).into(), // bottom left
+        (0.0, 0.5, 0.0).into(), (0.0, 0.0, 1.0).into() // top
     ];
 
     let mut vbo: gl::types::GLuint = 0;
@@ -57,7 +58,7 @@ fn run() -> Result<(), failure::Error> {
         gl.BindBuffer(gl::ARRAY_BUFFER, vbo);
         gl.BufferData(
             gl::ARRAY_BUFFER, // target
-            (vertices.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr, // size of data in bytes
+            (vertices.len() * std::mem::size_of::<data::f32x3>()) as gl::types::GLsizeiptr, // size of data in bytes
             vertices.as_ptr() as *const gl::types::GLvoid, // pointer to data
             gl::STATIC_DRAW, // usage
         );
