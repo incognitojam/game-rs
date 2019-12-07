@@ -9,6 +9,7 @@ walkdir = "2.2.9"
 
 [dependencies]
 gl = { path = "lib/gl" }
+failure = "0.1"
 
 [dependencies.sdl2]
 version = "0.32.2"
