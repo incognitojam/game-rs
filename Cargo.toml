@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Cameron Clough <cameronjclough@gmail.com>"]
 edition = "2018"
 
+[build-dependencies]
+walkdir = "2.2.9"
+
 [dependencies]
 gl = { path = "lib/gl" }
 
