@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate failure;
-extern crate gl;
-extern crate sdl2;
+#[macro_use]
+extern crate render_gl_derive;
 
 use std::path::Path;
 
@@ -11,27 +11,12 @@ use crate::resources::Resources;
 pub mod render_gl;
 pub mod resources;
 
+#[derive(VertexAttribPointers)]
 #[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 struct Vertex {
     pos: data::f32x3,
     clr: data::f32x3,
-}
-
-impl Vertex {
-    fn vertex_attrib_pointers(gl: &gl::Gl) {
-        let stride = std::mem::size_of::<Self>(); // byte offset between consecutive attributes
-
-        let location = 0; // layout (location = 0)
-        let offset = 0; // offset of the first component
-
-        unsafe { data::f32x3::vertex_attrib_pointer(gl, stride, location, offset); }
-
-        let location = 1; // layout (location = 1)
-        let offset = offset + std::mem::size_of::<data::f32x3>(); // offset of the first component
-
-        unsafe { data::f32x3::vertex_attrib_pointer(gl, stride, location, offset); }
-    }
 }
 
 fn main() {
