@@ -6,3 +6,6 @@ edition = "2018"
 
 [build-dependencies]
 gl_generator = "0.9.0"
+
+[features]
+debug = []

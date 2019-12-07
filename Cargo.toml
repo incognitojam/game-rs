@@ -10,3 +10,6 @@ gl = { path = "lib/gl" }
 [dependencies.sdl2]
 version = "0.32.2"
 features = ["bundled", "static-link"]
+
+[features]
+gl_debug = ["gl/debug"]

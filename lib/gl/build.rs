@@ -4,7 +4,7 @@ use std::env;
 use std::fs::File;
 use std::path::Path;
 
-use gl_generator::{Api, Fallbacks, Profile, Registry, StructGenerator};
+use gl_generator::{Api, DebugStructGenerator, Fallbacks, Profile, Registry, StructGenerator};
 
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
@@ -12,7 +12,7 @@ fn main() {
         &Path::new(&out_dir).join("bindings.rs"),
     ).unwrap();
 
-    Registry::new(
+    let registry = Registry::new(
         Api::Gl,
         (4, 5),
         Profile::Core,
@@ -20,8 +20,17 @@ fn main() {
         [
             "GL_NV_command_list", // additional extension we want to use
         ],
-    ).write_bindings(
-        StructGenerator, // different generator
-        &mut file_gl,
-    ).unwrap();
+    );
+
+    if env::var("CARGO_FEATURE_DEBUG").is_ok() {
+        registry.write_bindings(
+            DebugStructGenerator,
+            &mut file_gl,
+        ).unwrap();
+    } else {
+        registry.write_bindings(
+            StructGenerator,
+            &mut file_gl,
+        ).unwrap();
+    }
 }
