@@ -15,7 +15,9 @@ pub mod resources;
 #[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
 struct Vertex {
+    #[location = 0]
     pos: data::f32x3,
+    #[location = 1]
     clr: data::f32x3,
 }
 
