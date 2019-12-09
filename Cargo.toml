@@ -11,6 +11,7 @@ walkdir = "2.2.9"
 gl = { path = "lib/gl" }
 failure = "0.1"
 render_gl_derive = { path = "render_gl_derive" }
+vec-2-10-10-10 = "0.1.2"
 
 [dependencies.sdl2]
 version = "0.32.2"
