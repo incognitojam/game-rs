@@ -11,7 +11,7 @@ pub struct World {
 impl World {
     pub fn new(res: &Resources, gl: &gl::Gl) -> Result<World, failure::Error> {
         // setup shader program
-        let program = Program::from_res(gl, res, "shaders/triangle")?;
+        let program = Program::from_res("shaders/triangle", gl, res)?;
 
         // generate a chunk
         let chunk = Chunk::new(gl)?;

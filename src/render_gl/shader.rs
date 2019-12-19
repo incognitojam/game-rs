@@ -2,32 +2,47 @@ use std;
 use std::ffi::{CStr, CString};
 
 use gl;
+use nalgebra as na;
 
 use crate::resources::{self, Resources};
 
 #[derive(Debug, Fail)]
 pub enum Error {
     #[fail(display = "Failed to load resource {}", name)]
-    ResourceLoad { name: String, #[cause] inner: resources::Error },
+    ResourceLoad {
+        name: String,
+        #[cause] inner: resources::Error,
+    },
     #[fail(display = "Can not determine shader type for resource {}", name)]
-    CanNotDetermineShaderTypeForResource { name: String },
+    CanNotDetermineShaderTypeForResource {
+        name: String,
+    },
     #[fail(display = "Failed to compile shader {}: {}", name, message)]
-    CompileError { name: String, message: String },
+    CompileError {
+        name: String,
+        message: String,
+    },
     #[fail(display = "Failed to link program {}: {}", name, message)]
-    LinkError { name: String, message: String },
+    LinkError {
+        name: String,
+        message: String,
+    },
+    #[fail(display = "Failed to find uniform {} in {}", uniform_name, program_name)]
+    UniformLocationNotFound {
+        uniform_name: String,
+        program_name: String,
+    },
 }
 
 pub struct Program {
+    name: String,
     gl: gl::Gl,
     id: gl::types::GLuint,
 }
 
 impl Program {
-    pub fn from_res(gl: &gl::Gl, res: &Resources, name: &str) -> Result<Program, Error> {
-        const POSSIBLE_EXT: [&str; 2] = [
-            ".vert",
-            ".frag",
-        ];
+    pub fn from_res(name: &str, gl: &gl::Gl, res: &Resources) -> Result<Program, Error> {
+        const POSSIBLE_EXT: [&str; 2] = [".vert", ".frag"];
 
         let resource_names = POSSIBLE_EXT
             .iter()
@@ -39,13 +54,14 @@ impl Program {
             .map(|resource_name| Shader::from_res(gl, res, resource_name))
             .collect::<Result<Vec<Shader>, Error>>()?;
 
-        Program::from_shaders(gl, &shaders[..]).map_err(|message| Error::LinkError {
-            name: name.into(),
-            message,
-        })
+        Program::from_shaders(name, gl, &shaders[..])
+            .map_err(|message| Error::LinkError {
+                name: name.into(),
+                message,
+            })
     }
 
-    pub fn from_shaders(gl: &gl::Gl, shaders: &[Shader]) -> Result<Program, String> {
+    pub fn from_shaders(name: &str, gl: &gl::Gl, shaders: &[Shader]) -> Result<Program, String> {
         let program_id = unsafe { gl.CreateProgram() };
 
         for shader in shaders {
@@ -82,7 +98,11 @@ impl Program {
             unsafe { gl.DetachShader(program_id, shader.id()); }
         }
 
-        Ok(Program { gl: gl.clone(), id: program_id })
+        Ok(Program {
+            name: name.into(),
+            gl: gl.clone(),
+            id: program_id,
+        })
     }
 
     pub fn id(&self) -> gl::types::GLuint {
@@ -92,6 +112,35 @@ impl Program {
     pub fn set_used(&self) {
         unsafe {
             self.gl.UseProgram(self.id);
+        }
+    }
+
+    pub fn get_uniform_location(&self, name: &str) -> Result<i32, Error> {
+        let cname = CString::new(name)
+            .expect("expected uniform name to have no null bytes");
+
+        let location = unsafe {
+            self.gl.GetUniformLocation(self.id, cname.as_bytes_with_nul().as_ptr() as *const i8)
+        };
+
+        if location == -1 {
+            return Err(Error::UniformLocationNotFound {
+                program_name: self.name.clone(),
+                uniform_name: name.into(),
+            });
+        }
+
+        Ok(location)
+    }
+
+    pub fn set_uniform_matrix4fv(&self, location: i32, value: &na::Matrix4<f32>) {
+        unsafe {
+            self.gl.UniformMatrix4fv(
+                location,
+                1,
+                gl::FALSE,
+                value.as_slice().as_ptr() as *const f32,
+            );
         }
     }
 }
