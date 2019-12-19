@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate failure;
+extern crate floating_duration;
 extern crate gl;
 extern crate nalgebra;
 #[macro_use]
@@ -8,9 +9,12 @@ extern crate sdl2;
 extern crate vec_2_10_10_10;
 
 use std::path::Path;
+use std::time::Instant;
 
+use floating_duration::TimeAsFloat;
 use nalgebra as na;
 use sdl2::event::{Event, WindowEvent};
+use sdl2::keyboard::Scancode;
 
 use crate::camera::TargetCamera;
 use crate::render_gl::{ColorBuffer, data, Viewport};
@@ -74,6 +78,8 @@ fn run() -> Result<(), failure::Error> {
     viewport.set_used(&gl);
     color_buffer.set_used(&gl);
 
+    let mut time = Instant::now();
+
     let mut event_pump = sdl.event_pump().unwrap();
     'main: loop {
         for event in event_pump.poll_iter() {
@@ -86,19 +92,13 @@ fn run() -> Result<(), failure::Error> {
                     viewport.update_size(w, h);
                     viewport.set_used(&gl);
                 }
-                Event::MouseMotion {
-                    xrel,
-                    yrel,
-                    mousestate,
-                    ..
-                } => {
-                    if mousestate.right() {
-                        camera.rotate(&na::Vector2::new(xrel as f32, -yrel as f32));
-                    }
-                }
-                _ => {}
+                e => handle_camera_event(&mut camera, &e),
             }
         }
+
+        let delta = time.elapsed().as_fractional_secs();
+        time = Instant::now();
+        camera.apply_movement(delta as f32);
 
         let vp_matrix = camera.get_view_projection_matrix();
 
@@ -109,4 +109,46 @@ fn run() -> Result<(), failure::Error> {
     }
 
     Ok(())
+}
+
+fn handle_camera_event(camera: &mut camera::TargetCamera, e: &sdl2::event::Event) {
+    match *e {
+        Event::KeyDown {
+            scancode: Some(scancode),
+            ..
+        } => match scancode {
+            Scancode::LShift | Scancode::RShift => camera.movement.faster = true,
+            Scancode::A => camera.movement.left = true,
+            Scancode::W => camera.movement.forward = true,
+            Scancode::S => camera.movement.backward = true,
+            Scancode::D => camera.movement.right = true,
+            Scancode::Space => camera.movement.up = true,
+            Scancode::LCtrl => camera.movement.down = true,
+            _ => (),
+        },
+        Event::KeyUp {
+            scancode: Some(scancode),
+            ..
+        } => match scancode {
+            Scancode::LShift | Scancode::RShift => camera.movement.faster = false,
+            Scancode::A => camera.movement.left = false,
+            Scancode::W => camera.movement.forward = false,
+            Scancode::S => camera.movement.backward = false,
+            Scancode::D => camera.movement.right = false,
+            Scancode::Space => camera.movement.up = false,
+            Scancode::LCtrl => camera.movement.down = false,
+            _ => (),
+        },
+        Event::MouseMotion {
+            xrel,
+            yrel,
+            mousestate,
+            ..
+        } => {
+            if mousestate.right() {
+                camera.rotate(&na::Vector2::new(xrel as f32, -yrel as f32));
+            }
+        }
+        _ => (),
+    }
 }
