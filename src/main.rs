@@ -72,7 +72,7 @@ fn run() -> Result<(), failure::Error> {
         0.01,
         1000.0,
         3.14 / 4.0,
-        2.0,
+        0.0,
     );
 
     viewport.set_used(&gl);
@@ -101,9 +101,14 @@ fn run() -> Result<(), failure::Error> {
         camera.apply_movement(delta as f32);
 
         let vp_matrix = camera.get_view_projection_matrix();
+        unsafe {
+            gl.Enable(gl::CULL_FACE);
+            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+            gl.Enable(gl::DEPTH_TEST);
+        }
 
         color_buffer.clear(&gl);
-        world.draw(&gl, &vp_matrix);
+        world.draw(&gl, &vp_matrix, &camera.project_pos().coords);
 
         window.gl_swap_window();
     }

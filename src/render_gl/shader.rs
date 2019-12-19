@@ -143,6 +143,16 @@ impl Program {
             );
         }
     }
+
+    pub fn set_uniform_3f(&self, location: i32, value: &na::Vector3<f32>) {
+        unsafe {
+            self.gl.Uniform3fv(
+                location,
+                1,
+                value.as_slice().as_ptr() as *const f32,
+            );
+        }
+    }
 }
 
 impl Drop for Program {
