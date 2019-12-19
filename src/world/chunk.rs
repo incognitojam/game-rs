@@ -9,7 +9,7 @@ use super::{Block, CHUNK_VOLUME, Position};
 #[repr(C, packed)]
 struct Vertex {
     #[location = 0]
-    pos: data::f32x3,
+    pos: data::f32_f32_f32,
     #[location = 1]
     clr: data::u2_u10_u10_u10_rev_float,
 }
