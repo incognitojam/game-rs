@@ -1,18 +1,24 @@
 #[macro_use]
 extern crate failure;
+extern crate gl;
 extern crate nalgebra;
 #[macro_use]
 extern crate render_gl_derive;
+extern crate sdl2;
 extern crate vec_2_10_10_10;
 
 use std::path::Path;
 
 use nalgebra as na;
+use sdl2::event::{Event, WindowEvent};
 
-use crate::render_gl::data;
+use crate::camera::TargetCamera;
+use crate::render_gl::{ColorBuffer, data, Viewport};
 use crate::resources::Resources;
+use crate::world::World;
 
 mod debug;
+pub mod camera;
 pub mod maths;
 pub mod render_gl;
 pub mod resources;
@@ -34,21 +40,36 @@ fn run() -> Result<(), failure::Error> {
     gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
     gl_attr.set_context_version(4, 5);
 
+    let initial_window_size: (i32, i32) = (900, 700);
+
     let window = video_subsystem
-        .window("Game", 900, 700)
+        .window(
+            "Game",
+            initial_window_size.0 as u32,
+            initial_window_size.1 as u32,
+        )
         .opengl()
         .resizable()
         .build()?;
-
-    let mut viewport = render_gl::Viewport::for_window(900, 700);
-    let mut color_buffer = render_gl::ColorBuffer::from_color(na::Vector3::new(0.3, 0.3, 0.5));
 
     let _gl_context = window.gl_create_context().unwrap();
     let gl = gl::Gl::load_with(|s| {
         video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void
     });
 
-    let world = world::World::new(&res, &gl)?;
+    let mut viewport = Viewport::for_window(900, 700);
+    let color_buffer = ColorBuffer::from_color(na::Vector3::new(0.3, 0.3, 0.5));
+
+    let world = World::new(&res, &gl)?;
+
+    let mut camera = TargetCamera::new(
+        initial_window_size.0 as f32 / initial_window_size.1 as f32,
+        3.14 / 2.0,
+        0.01,
+        1000.0,
+        3.14 / 4.0,
+        2.0,
+    );
 
     viewport.set_used(&gl);
     color_buffer.set_used(&gl);
@@ -57,20 +78,32 @@ fn run() -> Result<(), failure::Error> {
     'main: loop {
         for event in event_pump.poll_iter() {
             match event {
-                sdl2::event::Event::Quit { .. } => break 'main,
-                sdl2::event::Event::Window {
-                    win_event: sdl2::event::WindowEvent::Resized(w, h),
+                Event::Quit { .. } => break 'main,
+                Event::Window {
+                    win_event: WindowEvent::Resized(w, h),
                     ..
                 } => {
                     viewport.update_size(w, h);
                     viewport.set_used(&gl);
                 }
+                Event::MouseMotion {
+                    xrel,
+                    yrel,
+                    mousestate,
+                    ..
+                } => {
+                    if mousestate.right() {
+                        camera.rotate(&na::Vector2::new(xrel as f32, -yrel as f32));
+                    }
+                }
                 _ => {}
             }
         }
 
+        let vp_matrix = camera.get_view_projection_matrix();
+
         color_buffer.clear(&gl);
-        world.draw(&gl);
+        world.draw(&gl, &vp_matrix);
 
         window.gl_swap_window();
     }
