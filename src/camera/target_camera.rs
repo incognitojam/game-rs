@@ -22,7 +22,7 @@ impl TargetCamera {
     ) -> TargetCamera {
         TargetCamera {
             target: na::Point3::origin(),
-            distance: 1.0,
+            distance: initial_distance,
             rotation: na::UnitQuaternion::from_axis_angle(
                 &na::Vector3::x_axis(),
                 ::std::f32::consts::PI / 4.0,
