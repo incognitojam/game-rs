@@ -1,10 +1,13 @@
 #[macro_use]
 extern crate failure;
+extern crate nalgebra;
 #[macro_use]
 extern crate render_gl_derive;
 extern crate vec_2_10_10_10;
 
 use std::path::Path;
+
+use nalgebra as na;
 
 use crate::render_gl::data;
 use crate::resources::Resources;
@@ -38,6 +41,7 @@ fn run() -> Result<(), failure::Error> {
         .build()?;
 
     let mut viewport = render_gl::Viewport::for_window(900, 700);
+    let mut color_buffer = render_gl::ColorBuffer::from_color(na::Vector3::new(0.3, 0.3, 0.5));
 
     let _gl_context = window.gl_create_context().unwrap();
     let gl = gl::Gl::load_with(|s| {
@@ -47,6 +51,7 @@ fn run() -> Result<(), failure::Error> {
     let world = world::World::new(&res, &gl)?;
 
     viewport.set_used(&gl);
+    color_buffer.set_used(&gl);
 
     let mut event_pump = sdl.event_pump().unwrap();
     'main: loop {
@@ -64,9 +69,7 @@ fn run() -> Result<(), failure::Error> {
             }
         }
 
-        unsafe {
-            gl.Clear(gl::COLOR_BUFFER_BIT);
-        }
+        color_buffer.clear(&gl);
         world.draw(&gl);
 
         window.gl_swap_window();
