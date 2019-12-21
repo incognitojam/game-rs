@@ -100,7 +100,8 @@ fn run() -> Result<(), failure::Error> {
         time = Instant::now();
         camera.apply_movement(delta as f32);
 
-        let vp_matrix = camera.get_view_projection_matrix();
+        let view_matrix = camera.get_view_matrix();
+        let projection_matrix = camera.get_projection_matrix();
         unsafe {
             gl.Enable(gl::CULL_FACE);
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
@@ -108,7 +109,7 @@ fn run() -> Result<(), failure::Error> {
         }
 
         color_buffer.clear(&gl);
-        world.draw(&gl, &vp_matrix, &camera.project_pos().coords);
+        world.draw(&gl, &view_matrix, &projection_matrix, &camera.project_pos().coords);
 
         window.gl_swap_window();
     }
@@ -122,26 +123,26 @@ fn handle_camera_event(camera: &mut camera::TargetCamera, e: &sdl2::event::Event
             scancode: Some(scancode),
             ..
         } => match scancode {
-            Scancode::LShift | Scancode::RShift => camera.movement.faster = true,
+            Scancode::LCtrl | Scancode::RCtrl => camera.movement.faster = true,
             Scancode::A => camera.movement.left = true,
             Scancode::W => camera.movement.forward = true,
             Scancode::S => camera.movement.backward = true,
             Scancode::D => camera.movement.right = true,
             Scancode::Space => camera.movement.up = true,
-            Scancode::LCtrl => camera.movement.down = true,
+            Scancode::LShift | Scancode::RShift => camera.movement.down = true,
             _ => (),
         },
         Event::KeyUp {
             scancode: Some(scancode),
             ..
         } => match scancode {
-            Scancode::LShift | Scancode::RShift => camera.movement.faster = false,
+            Scancode::LCtrl | Scancode::RCtrl => camera.movement.faster = false,
             Scancode::A => camera.movement.left = false,
             Scancode::W => camera.movement.forward = false,
             Scancode::S => camera.movement.backward = false,
             Scancode::D => camera.movement.right = false,
             Scancode::Space => camera.movement.up = false,
-            Scancode::LCtrl => camera.movement.down = false,
+            Scancode::LShift | Scancode::RShift => camera.movement.down = false,
             _ => (),
         },
         Event::MouseMotion {

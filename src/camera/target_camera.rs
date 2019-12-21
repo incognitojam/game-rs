@@ -41,7 +41,7 @@ impl TargetCamera {
             * na::Point3::<f32>::origin()
     }
 
-    fn get_view_matrix(&self) -> na::Matrix4<f32> {
+    pub fn get_view_matrix(&self) -> na::Matrix4<f32> {
         (na::Translation3::<f32>::from(self.target.coords)
             * self.rotation
             * na::Translation3::<f32>::from(na::Vector3::z() * self.distance)).inverse()
@@ -50,10 +50,6 @@ impl TargetCamera {
 
     pub fn get_projection_matrix(&self) -> na::Matrix4<f32> {
         self.projection.into_inner()
-    }
-
-    pub fn get_view_projection_matrix(&self) -> na::Matrix4<f32> {
-        self.get_projection_matrix() * self.get_view_matrix()
     }
 
     pub fn rotate(&mut self, rel: &na::Vector2<f32>) {

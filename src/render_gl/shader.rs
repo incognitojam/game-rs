@@ -153,6 +153,15 @@ impl Program {
             );
         }
     }
+
+    pub fn set_uniform_1i(&self, location: i32, value: i32) {
+        unsafe {
+            self.gl.Uniform1i(
+                location,
+                value,
+            );
+        }
+    }
 }
 
 impl Drop for Program {
