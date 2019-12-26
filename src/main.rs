@@ -23,7 +23,6 @@ use crate::world::World;
 
 mod debug;
 pub mod camera;
-pub mod maths;
 pub mod render_gl;
 pub mod resources;
 pub mod world;
