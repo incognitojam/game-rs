@@ -3,43 +3,46 @@ use std::os::raw;
 use failure;
 use gl;
 
+use crate::render_gl::data::f16_f16;
 use crate::resources::Resources;
 
-pub struct TextureLoadOptions<'a> {
+pub struct TextureOptions<'a> {
     resource_name: &'a str,
     format: gl::types::GLenum,
     pub gen_minimaps: bool,
+    rows: u16,
 }
 
-impl<'a> TextureLoadOptions<'a> {
-    pub fn from_res_rgb(resource_name: &str) -> TextureLoadOptions {
-        TextureLoadOptions {
+impl<'a> TextureOptions<'a> {
+    pub fn from_res_rgb(resource_name: &str) -> TextureOptions {
+        TextureOptions {
             resource_name,
             format: gl::RGB,
             gen_minimaps: false,
+            rows: 1,
         }
     }
 
-    pub fn from_res_rgba(resource_name: &str) -> TextureLoadOptions {
-        TextureLoadOptions {
+    pub fn from_res_rgba(resource_name: &str) -> TextureOptions {
+        TextureOptions {
             resource_name,
             format: gl::RGBA,
             gen_minimaps: false,
+            rows: 1,
         }
     }
-}
 
-pub struct TextureLoadBuilder<'a> {
-    options: TextureLoadOptions<'a>,
-}
-
-impl<'a> TextureLoadBuilder<'a> {
     pub fn load(self, gl: &gl::Gl, res: &Resources) -> Result<Texture, failure::Error> {
-        Texture::from_res(self.options, gl, res)
+        Texture::from_res(self, gl, res)
     }
 
     pub fn with_gen_minimaps(mut self) -> Self {
-        self.options.gen_minimaps = true;
+        self.gen_minimaps = true;
+        self
+    }
+
+    pub fn with_atlas_rows(mut self, rows: u16) -> Self {
+        self.rows = rows;
         self
     }
 }
@@ -47,29 +50,20 @@ impl<'a> TextureLoadBuilder<'a> {
 pub struct Texture {
     gl: gl::Gl,
     obj: gl::types::GLuint,
-}
-
-impl Drop for Texture {
-    fn drop(&mut self) {
-        unsafe { self.gl.DeleteTextures(1, &mut self.obj) };
-    }
+    uv_size: f32,
 }
 
 impl Texture {
-    pub fn from_res_rgb(resource_name: &str) -> TextureLoadBuilder {
-        TextureLoadBuilder {
-            options: TextureLoadOptions::from_res_rgb(resource_name),
-        }
+    pub fn from_res_rgb(resource_name: &str) -> TextureOptions {
+        TextureOptions::from_res_rgb(resource_name)
     }
 
-    pub fn from_res_rgba(resource_name: &str) -> TextureLoadBuilder {
-        TextureLoadBuilder {
-            options: TextureLoadOptions::from_res_rgba(resource_name),
-        }
+    pub fn from_res_rgba(resource_name: &str) -> TextureOptions {
+        TextureOptions::from_res_rgba(resource_name)
     }
 
     pub fn from_res<'a>(
-        options: TextureLoadOptions<'a>,
+        options: TextureOptions<'a>,
         gl: &gl::Gl,
         res: &Resources,
     ) -> Result<Texture, failure::Error> {
@@ -81,6 +75,7 @@ impl Texture {
         let texture = Texture {
             gl: gl.clone(),
             obj,
+            uv_size: 1.0 / options.rows as f32,
         };
 
         texture.update(options, res)?;
@@ -90,13 +85,17 @@ impl Texture {
 
     pub fn update<'a>(
         &self,
-        options: TextureLoadOptions<'a>,
+        options: TextureOptions<'a>,
         res: &Resources,
     ) -> Result<(), failure::Error> {
         let gl = &self.gl;
 
+        self.bind();
+
+        // Use "nearest neighbour" scaling method for all textures
         unsafe {
-            gl.BindTexture(gl::TEXTURE_2D, self.obj);
+            gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as gl::types::GLint);
+            gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as gl::types::GLint);
         }
 
         match options.format {
@@ -175,9 +174,7 @@ impl Texture {
             _ => unreachable!("Only RGB or RGBA images can be constructed"),
         }
 
-        unsafe {
-            gl.BindTexture(gl::TEXTURE_2D, 0);
-        }
+        self.unbind();
 
         Ok(())
     }
@@ -199,5 +196,33 @@ impl Texture {
             self.gl.ActiveTexture(gl::TEXTURE0 + index);
         }
         self.bind();
+    }
+
+    pub fn uv_from_index(&self, index: u32) -> [f16_f16; 4] {
+        let rows = (1.0 / self.uv_size) as u32;
+
+        // assuming texture atlas is square
+        let x = index % rows;
+        let y = index / rows;
+
+        [
+            self.uv_from_x_y(x, y),
+            self.uv_from_x_y(x + 1, y),
+            self.uv_from_x_y(x + 1, y + 1),
+            self.uv_from_x_y(x, y + 1),
+        ]
+    }
+
+    fn uv_from_x_y(&self, x: u32, y: u32) -> f16_f16 {
+        f16_f16::from((
+            self.uv_size * x as f32,
+            self.uv_size * y as f32,
+        ))
+    }
+}
+
+impl Drop for Texture {
+    fn drop(&mut self) {
+        unsafe { self.gl.DeleteTextures(1, &mut self.obj) };
     }
 }
