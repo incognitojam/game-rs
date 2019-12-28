@@ -1,8 +1,9 @@
+use std::ops::{Index, IndexMut};
 use crate::data;
 use crate::render_gl::{buffer, Texture};
 
 use super::{CHUNK_SIZE, CHUNK_VOLUME, Position};
-use super::block::{Block, BLOCK_FACES, BlockFace};
+use super::block::{self, Block, BLOCK_FACES, BlockFace};
 
 // TODO: replace with block?
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]
@@ -17,38 +18,55 @@ struct Vertex {
 }
 
 pub struct ChunkMesh {
+    texture: Texture,
+    vertices: Vec<Vertex>,
+    indices: Vec<u32>,
     vao: buffer::VertexArray,
-    _vbo: buffer::ArrayBuffer,
-    _ebo: buffer::ElementArrayBuffer,
+    vbo: buffer::ArrayBuffer,
+    ebo: buffer::ElementArrayBuffer,
     index_count: i32,
 }
 
 impl ChunkMesh {
-    fn draw(&self, gl: &gl::Gl) {
-        self.vao.bind();
-
-        unsafe {
-            gl.DrawElements(
-                gl::TRIANGLES, // drawing mode
-                self.index_count, // index vertex count
-                gl::UNSIGNED_INT, // index type
-                ::std::ptr::null(), /* ptr to indices (we are using ebo
-                                         configured at vao creation) */
-            );
-        }
-    }
-}
-
-pub struct ChunkMeshBuilder {
-    vertices: Vec<Vertex>,
-    indices: Vec<u32>,
-}
-
-impl ChunkMeshBuilder {
-    fn new() -> ChunkMeshBuilder {
-        ChunkMeshBuilder {
+    fn new(gl: &gl::Gl, texture: &Texture) -> ChunkMesh {
+        ChunkMesh {
+            texture: texture.clone(),
             vertices: Vec::new(),
             indices: Vec::new(),
+            vbo: buffer::ArrayBuffer::new(gl),
+            vao: buffer::VertexArray::new(gl),
+            ebo: buffer::ElementArrayBuffer::new(gl),
+            index_count: 0,
+        }
+    }
+
+    fn update(&mut self, data: &ChunkData<Block>) {
+        for z in 0..CHUNK_SIZE {
+            for x in 0..CHUNK_SIZE {
+                for y in 0..CHUNK_SIZE {
+                    let block_position = Position::new(x, y, z);
+                    let block = data[block_position];
+                    let face_uvs = self.texture.uv_from_index(block as u32);
+
+                    if block == block::AIR {
+                        // Do not render AIR blocks.
+                        continue;
+                    }
+
+                    for block_face in &BLOCK_FACES {
+                        let neighbor_position = block_position + block_face.normal;
+                        if neighbor_position.x < 0 || neighbor_position.y < 0 || neighbor_position.z < 0
+                            || neighbor_position.x >= CHUNK_SIZE || neighbor_position.y >= CHUNK_SIZE || neighbor_position.z >= CHUNK_SIZE
+                            || data[neighbor_position] == block::AIR {
+                            self.add_block_face(
+                                block_face,
+                                &block_position,
+                                &face_uvs,
+                            );
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -83,78 +101,115 @@ impl ChunkMeshBuilder {
         self.indices.push(index);
     }
 
-    fn build(&self, gl: &gl::Gl) -> ChunkMesh {
-        let vbo = buffer::ArrayBuffer::new(gl);
-        vbo.bind();
-        vbo.static_draw_data::<Vertex>(&self.vertices);
-        vbo.unbind();
+    pub fn flush(&mut self, gl: &gl::Gl) {
+        self.vbo.bind();
+        self.vbo.static_draw_data::<Vertex>(&self.vertices);
+        self.vbo.unbind();
 
-        let ebo = buffer::ElementArrayBuffer::new(gl);
-        ebo.bind();
-        ebo.static_draw_data::<u32>(&self.indices);
-        ebo.unbind();
+        self.ebo.bind();
+        self.ebo.static_draw_data::<u32>(&self.indices);
+        self.ebo.unbind();
 
-        // setup vao
-        let vao = buffer::VertexArray::new(gl);
-
-        vao.bind();
-        vbo.bind();
-        ebo.bind();
+        self.vao.bind();
+        self.vbo.bind();
+        self.ebo.bind();
         Vertex::vertex_attrib_pointers(&gl);
-        vbo.unbind();
-        vao.unbind();
-        ebo.unbind();
+        self.vbo.unbind();
+        self.vao.unbind();
+        self.ebo.unbind();
 
-        ChunkMesh {
-            vao,
-            _vbo: vbo,
-            _ebo: ebo,
-            index_count: self.indices.len() as i32,
+        self.index_count = self.indices.len() as i32;
+        self.vertices.clear();
+        self.indices.clear();
+    }
+
+    pub fn draw(&self, gl: &gl::Gl) {
+        self.vao.bind();
+
+        unsafe {
+            gl.DrawElements(
+                gl::TRIANGLES, // drawing mode
+                self.index_count, // index vertex count
+                gl::UNSIGNED_INT, // index type
+                ::std::ptr::null(), /* ptr to indices (we are using ebo
+                                         configured at vao creation) */
+            );
         }
     }
 }
 
 pub struct Chunk {
-    _position: Position,
-    blocks: [Block; CHUNK_VOLUME as usize],
-    chunk_mesh: ChunkMesh,
+    pub position: Position,
+    data: ChunkData<Block>,
+    mesh: ChunkMesh,
+    mesh_invalidated: bool,
+}
+
+struct ChunkData<T> {
+    data: [T; CHUNK_VOLUME as usize],
+}
+
+impl<T: Copy> ChunkData<T> {
+    pub fn new(default: T) -> ChunkData<T> {
+        ChunkData {
+            data: [default; CHUNK_VOLUME as usize],
+        }
+    }
+}
+
+impl<T> Index<Position> for ChunkData<T> {
+    type Output = T;
+
+    fn index(&self, index: Position) -> &Self::Output {
+        unsafe {
+            self.data.get_unchecked(i64::from(&index) as usize)
+        }
+    }
+}
+
+impl<T> IndexMut<Position> for ChunkData<T> {
+    fn index_mut(&mut self, index: Position) -> &mut Self::Output {
+        unsafe {
+            self.data.get_unchecked_mut(i64::from(&index) as usize)
+        }
+    }
 }
 
 impl Chunk {
     pub fn new(position: Position, gl: &gl::Gl, texture: &Texture) -> Result<Chunk, failure::Error> {
-        let mut builder = ChunkMeshBuilder::new();
+        let mut chunk = Chunk {
+            position,
+            data: ChunkData::new(block::STONE),
+            mesh: ChunkMesh::new(gl, texture),
+            mesh_invalidated: true,
+        };
 
+        chunk.generate();
+
+        Ok(chunk)
+    }
+
+    fn generate(&mut self) {
         for z in 0..CHUNK_SIZE {
             for x in 0..CHUNK_SIZE {
                 for y in 0..CHUNK_SIZE {
                     let block_position = Position::new(x, y, z);
-                    let face_uvs = texture.uv_from_index(1);
-
-                    for block_face in &BLOCK_FACES {
-                        builder.add_block_face(
-                            block_face,
-                            &block_position,
-                            &face_uvs,
-                        );
-                    }
+                    let block = if z == 15 { block::GRASS as Block } else if z > 11 { block::DIRT as Block } else { block::STONE as Block };
+                    self.data[block_position] = block;
                 }
             }
         }
-
-        let chunk_mesh = builder.build(gl);
-
-        Ok(Chunk {
-            _position: position,
-            blocks: [0; CHUNK_VOLUME as usize],
-            chunk_mesh,
-        })
     }
 
-    pub fn get_block(&self, position: &Position) -> Block {
-        self.blocks[i64::from(position) as usize]
+    pub fn update(&mut self, gl: &gl::Gl) {
+        if self.mesh_invalidated {
+            self.mesh.update(&self.data);
+            self.mesh.flush(gl);
+            self.mesh_invalidated = false;
+        }
     }
 
     pub fn draw(&self, gl: &gl::Gl) {
-        self.chunk_mesh.draw(gl);
+        self.mesh.draw(gl);
     }
 }

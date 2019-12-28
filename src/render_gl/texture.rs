@@ -47,6 +47,7 @@ impl<'a> TextureOptions<'a> {
     }
 }
 
+#[derive(Clone)]
 pub struct Texture {
     gl: gl::Gl,
     obj: gl::types::GLuint,
@@ -62,7 +63,7 @@ impl Texture {
         TextureOptions::from_res_rgba(resource_name)
     }
 
-    pub fn from_res<'a>(
+    fn from_res<'a>(
         options: TextureOptions<'a>,
         gl: &gl::Gl,
         res: &Resources,
@@ -206,10 +207,10 @@ impl Texture {
         let y = index / rows;
 
         [
-            self.uv_from_x_y(x, y),
-            self.uv_from_x_y(x + 1, y),
-            self.uv_from_x_y(x + 1, y + 1),
             self.uv_from_x_y(x, y + 1),
+            self.uv_from_x_y(x + 1, y + 1),
+            self.uv_from_x_y(x + 1, y),
+            self.uv_from_x_y(x, y),
         ]
     }
 

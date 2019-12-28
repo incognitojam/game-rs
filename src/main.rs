@@ -63,7 +63,7 @@ fn run() -> Result<(), failure::Error> {
     let mut viewport = Viewport::for_window(900, 700);
     let color_buffer = ColorBuffer::from_color(na::Vector3::new(0.3, 0.3, 0.5));
 
-    let world = World::new(&res, &gl)?;
+    let mut world = World::new(&res, &gl)?;
 
     let mut camera = TargetCamera::new(
         initial_window_size.0 as f32 / initial_window_size.1 as f32,
@@ -108,6 +108,7 @@ fn run() -> Result<(), failure::Error> {
         }
 
         color_buffer.clear(&gl);
+        world.update(&gl);
         world.draw(&gl, &view_matrix, &projection_matrix, &camera.project_pos().coords);
 
         window.gl_swap_window();

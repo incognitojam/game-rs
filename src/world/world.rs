@@ -25,7 +25,9 @@ impl World {
         let tex_face_location = program.get_uniform_location("TexFace")?;
 
         // load textures
-        let texture = Texture::from_res_rgba("textures/minecraft.png").with_atlas_rows(16).load(gl, res)?;
+        let texture = Texture::from_res_rgba("textures/minecraft.png")
+            .with_atlas_rows(16)
+            .load(gl, res)?;
 
         // generate a chunk
         let chunk = Chunk::new((0, 0, 0).into(), gl, &texture)?;
@@ -39,6 +41,13 @@ impl World {
             camera_pos_location,
             tex_face_location,
         })
+    }
+
+    pub fn update(
+        &mut self,
+        gl: &gl::Gl,
+    ) {
+        self.chunk.update(gl);
     }
 
     pub fn draw(

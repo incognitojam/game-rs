@@ -11,7 +11,7 @@ pub struct Position {
 }
 
 impl Position {
-    pub fn new(x: i64, y: i64, z: i64) -> Position {
+    pub const fn new(x: i64, y: i64, z: i64) -> Position {
         Position {
             x,
             y,
@@ -19,7 +19,7 @@ impl Position {
         }
     }
 
-    pub fn add(&self, other: &Position) -> Position {
+    pub const fn add(&self, other: &Position) -> Position {
         Position {
             x: self.x + other.x,
             y: self.y + other.y,

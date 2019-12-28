@@ -1,8 +1,16 @@
+use crate::world::Position;
+
 pub type Block = u8;
 
+pub const AIR: Block = 0;
+pub const STONE: Block = 1;
+pub const DIRT: Block = 2;
+pub const GRASS: Block = 3;
+pub const LOG: Block = 4;
+
 pub struct BlockFace {
-    pub normal: (f32, f32, f32),
-    pub vertices: [(i64, i64, i64); 4],
+    pub normal: Position,
+    pub vertices: [Position; 4],
 }
 
 pub const BLOCK_FACES: [BlockFace; 6] = [
@@ -15,26 +23,54 @@ pub const BLOCK_FACES: [BlockFace; 6] = [
 ];
 
 const NORTH_FACE: BlockFace = BlockFace {
-    normal: (0.0, 1.0, 0.0),
-    vertices: [(0, 1, 0), (1, 1, 0), (1, 0, 0), (0, 0, 0)],
+    normal: Position::new(0, 1, 0),
+    vertices: [
+        Position::new(0, 1, 0),
+        Position::new(1, 1, 0),
+        Position::new(1, 0, 0),
+        Position::new(0, 0, 0),
+    ],
 };
 const EAST_FACE: BlockFace = BlockFace {
-    normal: (1.0, 0.0, 0.0),
-    vertices: [(1, 0, 0), (1, 1, 0), (1, 1, 1), (1, 0, 1)],
+    normal: Position::new(1, 0, 0),
+    vertices: [
+        Position::new(1, 0, 0),
+        Position::new(1, 1, 0),
+        Position::new(1, 1, 1),
+        Position::new(1, 0, 1),
+    ],
 };
 const SOUTH_FACE: BlockFace = BlockFace {
-    normal: (0.0, -1.0, 0.0),
-    vertices: [(0, 0, 0), (1, 0, 0), (1, 0, 1), (0, 0, 1)],
+    normal: Position::new(0, -1, 0),
+    vertices: [
+        Position::new(0, 0, 0),
+        Position::new(1, 0, 0),
+        Position::new(1, 0, 1),
+        Position::new(0, 0, 1),
+    ],
 };
 const WEST_FACE: BlockFace = BlockFace {
-    normal: (-1.0, 0.0, 0.0),
-    vertices: [(0, 1, 0), (0, 0, 0), (0, 0, 1), (0, 1, 1)],
+    normal: Position::new(-1, 0, 0),
+    vertices: [Position::new(0, 1, 0),
+        Position::new(0, 0, 0),
+        Position::new(0, 0, 1),
+        Position::new(0, 1, 1),
+    ],
 };
 const TOP_FACE: BlockFace = BlockFace {
-    normal: (0.0, 0.0, 1.0),
-    vertices: [(0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)],
+    normal: Position::new(0, 0, 1),
+    vertices: [Position::new(0, 0, 1),
+        Position::new(1, 0, 1),
+        Position::new(1, 1, 1),
+        Position::new(0, 1, 1),
+    ],
 };
 const BOTTOM_FACE: BlockFace = BlockFace {
-    normal: (0.0, 0.0, -1.0),
-    vertices: [(1, 1, 0), (0, 1, 0), (0, 1, 1), (1, 1, 1)],
+    normal: Position::new(0, 0, -1),
+    vertices: [
+        Position::new(1, 1, 0),
+        Position::new(0, 1, 0),
+        Position::new(0, 1, 1),
+        Position::new(1, 1, 1),
+    ],
 };
