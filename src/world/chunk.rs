@@ -4,6 +4,7 @@ use crate::render_gl::{buffer, Texture};
 
 use super::{CHUNK_SIZE, CHUNK_VOLUME, Position};
 use super::block::{self, Block, BLOCK_FACES, BlockFace};
+use crate::world::block::LightLevel;
 
 // TODO: replace with block?
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]
@@ -13,6 +14,8 @@ struct Vertex {
     pos: data::f32_f32_f32,
     #[location = 1]
     uv: data::f16_f16,
+    #[location = 2]
+    light_level: data::f32_,
 }
 
 pub struct ChunkMesh {
@@ -38,12 +41,13 @@ impl ChunkMesh {
         }
     }
 
-    fn update(&mut self, data: &ChunkData<Block>) {
+    fn update(&mut self, block_data: &ChunkData<Block>, light_data: &ChunkData<LightLevel>) {
         for z in 0..CHUNK_SIZE {
             for x in 0..CHUNK_SIZE {
                 for y in 0..CHUNK_SIZE {
-                    let block_position = Position::new(x, y, z);
-                    let block = data[block_position];
+                    let block_position: Position = Position::new(x, y, z);
+                    let block: Block = block_data[block_position];
+                    let light_level = data::f32_::new(((light_data[block_position] as f32) / 16.0) as f32);
                     let face_uvs = self.texture.uv_from_index(block as u32);
 
                     if block == block::AIR {
@@ -55,11 +59,12 @@ impl ChunkMesh {
                         let neighbor_position = block_position + block_face.normal;
                         if neighbor_position.x < 0 || neighbor_position.y < 0 || neighbor_position.z < 0
                             || neighbor_position.x >= CHUNK_SIZE || neighbor_position.y >= CHUNK_SIZE || neighbor_position.z >= CHUNK_SIZE
-                            || data[neighbor_position] == block::AIR {
+                            || block_data[neighbor_position] == block::AIR {
                             self.add_block_face(
                                 block_face,
                                 &block_position,
                                 &face_uvs,
+                                &light_level,
                             );
                         }
                     }
@@ -73,6 +78,7 @@ impl ChunkMesh {
         block_face: &BlockFace,
         block_position: &Position,
         face_uvs: &[data::f16_f16; 4],
+        light_level: &data::f32_,
     ) {
         let face_vertices = &block_face.vertices;
         let index = self.vertices.len() as u32;
@@ -80,12 +86,10 @@ impl ChunkMesh {
         for i in 0..4 {
             let vertex_position = Position::from(face_vertices[i]) + *block_position;
 
-            let pos = data::f32_f32_f32::from(vertex_position);
-            let uv = face_uvs[i];
-
             self.vertices.push(Vertex {
-                pos,
-                uv,
+                pos: vertex_position.into(),
+                uv: face_uvs[i],
+                light_level: *light_level,
             });
         }
 
@@ -136,7 +140,8 @@ impl ChunkMesh {
 
 pub struct Chunk {
     pub position: Position,
-    data: ChunkData<Block>,
+    block_data: ChunkData<Block>,
+    light_data: ChunkData<LightLevel>,
     mesh: ChunkMesh,
     mesh_invalidated: bool,
 }
@@ -175,23 +180,44 @@ impl Chunk {
     pub fn new(position: Position, gl: &gl::Gl, texture: &Texture) -> Result<Chunk, failure::Error> {
         let mut chunk = Chunk {
             position,
-            data: ChunkData::new(block::STONE),
+            block_data: ChunkData::new(block::STONE),
+            light_data: ChunkData::new(16),
             mesh: ChunkMesh::new(gl, texture),
             mesh_invalidated: true,
         };
 
-        chunk.generate();
+        Chunk::generate_blocks(&mut chunk.block_data);
+        Chunk::calculate_lighting(&chunk.block_data, &mut chunk.light_data);
 
         Ok(chunk)
     }
 
-    fn generate(&mut self) {
+    fn generate_blocks(block_data: &mut ChunkData<Block>) {
         for z in 0..CHUNK_SIZE {
             for x in 0..CHUNK_SIZE {
                 for y in 0..CHUNK_SIZE {
                     let block_position = Position::new(x, y, z);
                     let block = if z == 15 { block::GRASS as Block } else if z > 11 { block::DIRT as Block } else { block::STONE as Block };
-                    self.data[block_position] = block;
+                    block_data[block_position] = block;
+                }
+            }
+        }
+    }
+
+    fn calculate_lighting(block_data: &ChunkData<Block>, light_data: &mut ChunkData<LightLevel>) {
+        for x in 0..CHUNK_SIZE {
+            for y in 0..CHUNK_SIZE {
+                let mut light_level: LightLevel = 16;
+
+                for z in (0..CHUNK_SIZE).rev() {
+                    let block_position = Position::new(x, y, z);
+                    let block: Block = block_data[block_position];
+
+                    light_data[block_position] = light_level;
+
+                    if block != block::AIR && light_level >= 2 {
+                        light_level -= 2;
+                    }
                 }
             }
         }
@@ -199,7 +225,7 @@ impl Chunk {
 
     pub fn update(&mut self, gl: &gl::Gl) {
         if self.mesh_invalidated {
-            self.mesh.update(&self.data);
+            self.mesh.update(&self.block_data, &self.light_data);
             self.mesh.flush(gl);
             self.mesh_invalidated = false;
         }

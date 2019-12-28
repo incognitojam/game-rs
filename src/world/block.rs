@@ -8,6 +8,8 @@ pub const DIRT: Block = 2;
 pub const GRASS: Block = 3;
 pub const LOG: Block = 4;
 
+pub type LightLevel = u8;
+
 pub struct BlockFace {
     pub normal: Position,
     pub vertices: [Position; 4],
