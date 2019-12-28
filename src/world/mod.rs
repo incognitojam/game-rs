@@ -4,6 +4,7 @@ pub use world::World;
 
 pub mod block;
 mod chunk;
+mod light;
 mod position;
 mod world;
 

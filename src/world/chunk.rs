@@ -1,10 +1,11 @@
 use std::ops::{Index, IndexMut};
+
 use crate::data;
 use crate::render_gl::{buffer, Texture};
+use crate::world::light::{self, LightLevel};
 
 use super::{CHUNK_SIZE, CHUNK_VOLUME, Position};
 use super::block::{self, Block, BLOCK_FACES, BlockFace};
-use crate::world::block::LightLevel;
 
 // TODO: replace with block?
 #[derive(VertexAttribPointers, Copy, Clone, Debug)]
@@ -50,7 +51,7 @@ impl ChunkMesh {
                     let light_level = data::f32_::new(((light_data[block_position] as f32) / 16.0) as f32);
                     let face_uvs = self.texture.uv_from_index(block as u32);
 
-                    if block == block::AIR {
+                    if block == block::material::AIR {
                         // Do not render AIR blocks.
                         continue;
                     }
@@ -59,7 +60,7 @@ impl ChunkMesh {
                         let neighbor_position = block_position + block_face.normal;
                         if neighbor_position.x < 0 || neighbor_position.y < 0 || neighbor_position.z < 0
                             || neighbor_position.x >= CHUNK_SIZE || neighbor_position.y >= CHUNK_SIZE || neighbor_position.z >= CHUNK_SIZE
-                            || block_data[neighbor_position] == block::AIR {
+                            || block_data[neighbor_position] == block::material::AIR {
                             self.add_block_face(
                                 block_face,
                                 &block_position,
@@ -180,7 +181,7 @@ impl Chunk {
     pub fn new(position: Position, gl: &gl::Gl, texture: &Texture) -> Result<Chunk, failure::Error> {
         let mut chunk = Chunk {
             position,
-            block_data: ChunkData::new(block::STONE),
+            block_data: ChunkData::new(block::material::STONE),
             light_data: ChunkData::new(16),
             mesh: ChunkMesh::new(gl, texture),
             mesh_invalidated: true,
@@ -197,7 +198,7 @@ impl Chunk {
             for x in 0..CHUNK_SIZE {
                 for y in 0..CHUNK_SIZE {
                     let block_position = Position::new(x, y, z);
-                    let block = if z == 15 { block::GRASS as Block } else if z > 11 { block::DIRT as Block } else { block::STONE as Block };
+                    let block = if z == 15 { block::material::GRASS as Block } else if z > 11 { block::material::DIRT as Block } else { block::material::STONE as Block };
                     block_data[block_position] = block;
                 }
             }
@@ -207,7 +208,7 @@ impl Chunk {
     fn calculate_lighting(block_data: &ChunkData<Block>, light_data: &mut ChunkData<LightLevel>) {
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
-                let mut light_level: LightLevel = 16;
+                let mut light_level: LightLevel = light::SUNLIGHT;
 
                 for z in (0..CHUNK_SIZE).rev() {
                     let block_position = Position::new(x, y, z);
@@ -215,7 +216,7 @@ impl Chunk {
 
                     light_data[block_position] = light_level;
 
-                    if block != block::AIR && light_level >= 2 {
+                    if block != block::material::AIR && light_level >= 2 {
                         light_level -= 2;
                     }
                 }
