@@ -46,6 +46,44 @@ impl From<(f32, f32)> for f16_f16 {
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
+pub struct f32_ {
+    pub d0: f32,
+}
+
+impl f32_ {
+    pub fn new(d0: f32) -> f32_ {
+        f32_ {
+            d0,
+        }
+    }
+
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
+        gl.EnableVertexAttribArray(location as gl::types::GLuint);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            1, // the number of components per generic vertex attribute
+            gl::FLOAT, // data type
+            gl::FALSE, // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
+    }
+}
+
+impl From<f32> for f32_ {
+    fn from(other: f32) -> Self {
+        f32_::new(other)
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Copy, Clone, Debug)]
+#[repr(C, packed)]
 pub struct f32_f32_f32 {
     pub d0: f32,
     pub d1: f32,
