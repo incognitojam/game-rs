@@ -12,8 +12,6 @@ struct Vertex {
     #[location = 0]
     pos: data::f32_f32_f32,
     #[location = 1]
-    normal: data::f32_f32_f32,
-    #[location = 2]
     uv: data::f16_f16,
 }
 
@@ -77,7 +75,6 @@ impl ChunkMesh {
         face_uvs: &[data::f16_f16; 4],
     ) {
         let face_vertices = &block_face.vertices;
-        let normal = data::f32_f32_f32::from(block_face.normal);
         let index = self.vertices.len() as u32;
 
         for i in 0..4 {
@@ -88,7 +85,6 @@ impl ChunkMesh {
 
             self.vertices.push(Vertex {
                 pos,
-                normal,
                 uv,
             });
         }

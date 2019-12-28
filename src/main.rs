@@ -73,6 +73,7 @@ fn run() -> Result<(), failure::Error> {
         3.14 / 4.0,
         0.0,
     );
+    camera.target = na::Vector3::new(8.0, 8.0, 17.5).into();
 
     viewport.set_used(&gl);
     color_buffer.set_used(&gl);

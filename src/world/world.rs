@@ -11,7 +11,6 @@ pub struct World {
     texture: Texture,
     view_location: i32,
     projection_location: i32,
-    camera_pos_location: i32,
     tex_face_location: i32,
 }
 
@@ -21,7 +20,6 @@ impl World {
         let program = Program::from_res("shaders/cube", gl, res)?;
         let view_location = program.get_uniform_location("View")?;
         let projection_location = program.get_uniform_location("Projection")?;
-        let camera_pos_location = program.get_uniform_location("CameraPos")?;
         let tex_face_location = program.get_uniform_location("TexFace")?;
 
         // load textures
@@ -38,7 +36,7 @@ impl World {
             texture,
             view_location,
             projection_location,
-            camera_pos_location,
+//            camera_pos_location,
             tex_face_location,
         })
     }
@@ -62,7 +60,6 @@ impl World {
         self.program.set_used();
         self.program.set_uniform_matrix4fv(self.view_location, view_matrix);
         self.program.set_uniform_matrix4fv(self.projection_location, projection_matrix);
-        self.program.set_uniform_3f(self.camera_pos_location, camera_pos);
         self.program.set_uniform_1i(self.tex_face_location, 0);
 
         self.chunk.draw(gl);
