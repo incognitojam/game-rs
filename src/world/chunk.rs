@@ -4,7 +4,7 @@ use crate::data;
 use crate::render_gl::{buffer, Texture};
 use crate::world::light::{self, LightLevel};
 
-use super::{CHUNK_SIZE, CHUNK_VOLUME, Position};
+use super::{CHUNK_SIZE, CHUNK_VOLUME, Direction, Position};
 use super::block::{self, Block, BLOCK_FACES, BlockFace};
 
 // TODO: replace with block?
@@ -49,7 +49,6 @@ impl ChunkMesh {
                     let block_position: Position = Position::new(x, y, z);
                     let block: Block = block_data[block_position];
                     let light_level = data::f32_::new(((light_data[block_position] as f32) / 16.0) as f32);
-                    let face_uvs = self.texture.uv_from_index(block as u32);
 
                     if block == block::material::AIR {
                         // Do not render AIR blocks.
@@ -57,6 +56,20 @@ impl ChunkMesh {
                     }
 
                     for block_face in &BLOCK_FACES {
+                        // TODO: calculate face texture index properly
+                        let mut tex_id = block;
+
+                        if block == block::material::GRASS {
+                            match block_face.direction {
+                                Direction::Top => {
+                                    tex_id = 0
+                                }
+                                _ => {}
+                            }
+                        }
+
+                        let face_uvs = self.texture.uv_from_index(tex_id as u32);
+
                         let neighbor_position = block_position + block_face.normal;
                         if neighbor_position.x < 0 || neighbor_position.y < 0 || neighbor_position.z < 0
                             || neighbor_position.x >= CHUNK_SIZE || neighbor_position.y >= CHUNK_SIZE || neighbor_position.z >= CHUNK_SIZE
