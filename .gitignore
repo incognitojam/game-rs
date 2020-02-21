@@ -4,3 +4,4 @@
 *.iml
 .vscode
 .atom
+.DS_Store
