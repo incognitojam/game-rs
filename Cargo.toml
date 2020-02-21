@@ -18,7 +18,7 @@ image = "0.22.3"
 half = "1.4.0"
 
 [dependencies.sdl2]
-version = "0.32.2"
+version = "0.33"
 features = ["bundled", "static-link"]
 
 [features]
