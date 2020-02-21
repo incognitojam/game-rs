@@ -10,7 +10,7 @@ uniform mat4 Projection;
 out VS_OUTPUT {
     vec3 Position;
     vec2 Uv;
-    float LightLevel;
+    float LightBrightness;
 } OUT;
 
 void main()
@@ -19,5 +19,5 @@ void main()
 
     OUT.Position = Position;
     OUT.Uv = Uv;
-    OUT.LightLevel = LightLevel;
+    OUT.LightBrightness = (1.0f / 16.0f) + (LightLevel / 16.0f);
 }

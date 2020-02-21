@@ -5,12 +5,12 @@ uniform sampler2D TexFace;
 in VS_OUTPUT {
     vec3 Position;
     vec2 Uv;
-    float LightLevel;
+    float LightBrightness;
 } IN;
 
 out vec4 Color;
 
 void main()
 {
-    Color = texture(TexFace, IN.Uv) * IN.LightLevel;
+    Color = texture(TexFace, IN.Uv) * IN.LightBrightness;
 }

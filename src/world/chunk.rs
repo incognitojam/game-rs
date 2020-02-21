@@ -16,7 +16,7 @@ struct Vertex {
     #[location = 1]
     uv: data::f16_f16,
     #[location = 2]
-    light_level: data::f32_,
+    light_level: data::u8_,
 }
 
 pub struct ChunkMesh {
@@ -48,7 +48,7 @@ impl ChunkMesh {
                 for y in 0..CHUNK_SIZE {
                     let block_position: Position = Position::new(x, y, z);
                     let block: Block = block_data[block_position];
-                    let light_level = data::f32_::new(((light_data[block_position] as f32) / 16.0) as f32);
+                    let light_level = data::u8_::new(light_data[block_position]);
 
                     if block == block::material::AIR {
                         // Do not render AIR blocks.
@@ -92,7 +92,7 @@ impl ChunkMesh {
         block_face: &BlockFace,
         block_position: &Position,
         face_uvs: &[data::f16_f16; 4],
-        light_level: &data::f32_,
+        light_level: &data::u8_,
     ) {
         let face_vertices = &block_face.vertices;
         let index = self.vertices.len() as u32;
@@ -229,8 +229,8 @@ impl Chunk {
 
                     light_data[block_position] = light_level;
 
-                    if block != block::material::AIR && light_level >= 2 {
-                        light_level -= 2;
+                    if block != block::material::AIR && light_level > 1 {
+                        light_level -= 1;
                     }
                 }
             }

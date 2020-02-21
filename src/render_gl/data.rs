@@ -123,6 +123,44 @@ impl From<(f32, f32, f32)> for f32_f32_f32 {
     }
 }
 
+#[allow(non_camcel_case_types)]
+#[derive(Copy, Clone, Debug)]
+#[repr(C, packed)]
+pub struct u8_ {
+    pub inner: u8,
+}
+
+impl u8_ {
+    pub fn new(d0: u8) -> u8_ {
+        u8_ {
+            inner: d0,
+        }
+    }
+
+    pub unsafe fn vertex_attrib_pointer(
+        gl: &gl::Gl,
+        stride: usize,
+        location: usize,
+        offset: usize,
+    ) {
+        gl.EnableVertexAttribArray(location as gl::types::GLuint);
+        gl.VertexAttribPointer(
+            location as gl::types::GLuint,
+            1, // the number of components per generic vertex attribute
+            gl::BYTE, // data type
+            gl::FALSE, // normalized (int-to-float conversion)
+            stride as gl::types::GLint,
+            offset as *const gl::types::GLvoid,
+        );
+    }
+}
+
+impl From<u8> for u8_ {
+    fn from(other: u8) -> Self {
+        u8_::new(other)
+    }
+}
+
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
