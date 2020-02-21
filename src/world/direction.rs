@@ -3,6 +3,6 @@ pub enum Direction {
     East,
     South,
     West,
-    Up,
-    Down,
+    Top,
+    Bottom,
 }

@@ -1,20 +1,22 @@
-use crate::world::Position;
+use crate::world::{Direction, Position};
 
 pub struct BlockFace {
+    pub direction: Direction,
     pub normal: Position,
     pub vertices: [Position; 4],
 }
 
 pub const BLOCK_FACES: [BlockFace; 6] = [
-    NORTH_FACE,
-    EAST_FACE,
-    SOUTH_FACE,
-    WEST_FACE,
-    TOP_FACE,
-    BOTTOM_FACE,
+    NORTH,
+    EAST,
+    SOUTH,
+    WEST,
+    TOP,
+    BOTTOM,
 ];
 
-const NORTH_FACE: BlockFace = BlockFace {
+const NORTH: BlockFace = BlockFace {
+    direction: Direction::North,
     normal: Position::new(0, 1, 0),
     vertices: [
         Position::new(0, 1, 0),
@@ -23,7 +25,8 @@ const NORTH_FACE: BlockFace = BlockFace {
         Position::new(0, 0, 0),
     ],
 };
-const EAST_FACE: BlockFace = BlockFace {
+const EAST: BlockFace = BlockFace {
+    direction: Direction::East,
     normal: Position::new(1, 0, 0),
     vertices: [
         Position::new(1, 0, 0),
@@ -32,7 +35,8 @@ const EAST_FACE: BlockFace = BlockFace {
         Position::new(1, 0, 1),
     ],
 };
-const SOUTH_FACE: BlockFace = BlockFace {
+const SOUTH: BlockFace = BlockFace {
+    direction: Direction::South,
     normal: Position::new(0, -1, 0),
     vertices: [
         Position::new(0, 0, 0),
@@ -41,7 +45,8 @@ const SOUTH_FACE: BlockFace = BlockFace {
         Position::new(0, 0, 1),
     ],
 };
-const WEST_FACE: BlockFace = BlockFace {
+const WEST: BlockFace = BlockFace {
+    direction: Direction::West,
     normal: Position::new(-1, 0, 0),
     vertices: [Position::new(0, 1, 0),
         Position::new(0, 0, 0),
@@ -49,7 +54,8 @@ const WEST_FACE: BlockFace = BlockFace {
         Position::new(0, 1, 1),
     ],
 };
-const TOP_FACE: BlockFace = BlockFace {
+const TOP: BlockFace = BlockFace {
+    direction: Direction::Top,
     normal: Position::new(0, 0, 1),
     vertices: [Position::new(0, 0, 1),
         Position::new(1, 0, 1),
@@ -57,7 +63,8 @@ const TOP_FACE: BlockFace = BlockFace {
         Position::new(0, 1, 1),
     ],
 };
-const BOTTOM_FACE: BlockFace = BlockFace {
+const BOTTOM: BlockFace = BlockFace {
+    direction: Direction::Bottom,
     normal: Position::new(0, 0, -1),
     vertices: [
         Position::new(1, 1, 0),

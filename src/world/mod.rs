@@ -1,9 +1,11 @@
 pub use chunk::Chunk;
+pub use direction::Direction;
 pub use position::Position;
 pub use world::World;
 
 pub mod block;
 mod chunk;
+mod direction;
 mod light;
 mod position;
 mod world;
