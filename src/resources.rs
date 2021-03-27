@@ -69,15 +69,15 @@ impl Resources {
         let path = resource_name_to_path(&self.root_path, resource_name);
         let img = image::open(path)?;
 
-        Ok(img.to_rgb())
+        Ok(img.to_rgb8())
     }
 
     pub fn load_rgba_image(&self, resource_name: &str) -> Result<image::RgbaImage, Error> {
         let path = resource_name_to_path(&self.root_path, resource_name);
         let img = image::open(path)?;
 
-        if let image::ColorType::RGBA(_) = img.color() {
-            Ok(img.to_rgba())
+        if img.color() == image::ColorType::Rgba8 {
+            Ok(img.to_rgba8())
         } else {
             Err(Error::ImageIsNotRgba {
                 name: resource_name.into(),
